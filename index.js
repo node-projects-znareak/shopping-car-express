@@ -1,11 +1,11 @@
 const express = require("express");
 const app = express();
 const path = require("path");
-const port = 5000;
 const morgan = require("morgan");
-const { reqinfo } = require("./middlewares/reqinfo");
+const debug = require("debug")("app:server");
 const productsRouter = require("./routers/views/products");
 const productsApiRouter = require("./routers/api/productsApiRouter");
+const authApiRouter = require("./routers/api/authApiRouter")
 const config = require("./config");
 const {
   logErrors,
@@ -23,14 +23,14 @@ app.set("view engine", "pug");
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan("dev"));
-app.use("/api/products", reqinfo);
 
 // static frontend files
 app.use("/static", express.static(path.join(__dirname, "./public")));
 
-// api's routers
+// api routers
 app.use("/products", productsRouter);
-app.use("/api/products", productsApiRouter);
+productsApiRouter(app);
+app.use("/api/auth", authApiRouter);
 
 app.get("/", (req, res) => {
   res.redirect("/products");
@@ -54,5 +54,5 @@ app.use(errorHandling);
 
 // server starting
 app.listen(config.port, () => {
-  console.log("Servidor iniciado en el puerto " + port);
+  debug(`Listening http://localhost:${config.port}`);
 });
