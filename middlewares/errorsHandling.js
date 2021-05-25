@@ -1,13 +1,6 @@
 const config = require("../config/");
 const boom = require("boom");
-const Sentry = require("@sentry/node");
 const isRequestAjaxOrApi = require("../utils/isRequestAjaxOrApi");
-
-Sentry.init({
-  dsn:
-    "https://c5e65bfe77f549baaf03481ff6ee8d7f@o566799.ingest.sentry.io/5710054",
-  tracesSampleRate: 1.0,
-});
 
 function withErrorStack(err, Stack) {
   if (config.dev) {
@@ -16,7 +9,6 @@ function withErrorStack(err, Stack) {
 }
 
 function logErrors(err, req, res, next) {
-  Sentry.captureException(err);
   console.log(err.stack);
   next(err);
 }
@@ -25,15 +17,19 @@ function wrapErrors(err, req, res, next) {
   if (!err.isBoom) {
     next(boom.badImplementation(err));
   }
+  // err ya tiene un error tipo Boom
   next(err);
 }
 
 function clientErrorHandling(err, req, res, next) {
+  // err es una instancia de Boom, por lo tanto se puede acceder a err.output
   const { statusCode, payload } = err.output;
   // catch errors ajax or errors while streaming
   if (isRequestAjaxOrApi(req) || req.headersSent) {
     return res.status(statusCode).json(withErrorStack(payload, err.stack));
   }
+
+  // si no es una peticion fetch, entonces renderizamos una pagina de error
   next(err);
 }
 
